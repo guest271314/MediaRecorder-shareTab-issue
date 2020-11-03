@@ -1,0 +1,171 @@
+<html>
+  <head>
+    <style>
+        button {
+            padding: 8px;
+            font-size:20px;
+        }
+      .row {
+        margin: 10px 0;
+      }
+      .row .label {
+        display: inline-block;
+        width: 100px;
+      }
+      .row .input {
+        width: 300px;
+      }
+      #mr-time-since-last, #mr-last-data {
+          font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MediaRecorder+getDisplayMedia Demo</h1>
+
+    <div class="row">
+      <h2>
+        1. Get display media (select Chrome Tab with static content, no
+        animations)
+      </h2>
+      <button id="get-display-media-button" onclick="getDisplayMedia()">
+        Request
+      </button>
+    </div>
+    <div class="row">
+      <h2>2. Get audio</h2>
+      <button id="get-audio-media-button" onclick="getAudioMedia()">
+        Get Audio Capture
+      </button>
+    </div>
+    <div class="row">
+      <h2>3. Create MediaRecorder</h2>
+      <button id="start-button" onclick="onStart()">Start</button>
+    </div>
+    <div class="row">
+      <h2>4. Observe</h2>
+      <i>If the video track is muted, click into the shared tab and/or scroll the page. This causes the track to become unmuted and you will see the MediaRecorder starts producing data via it's ondataavailable event handler. If you stop interacting with the page, you'll see the track gets muted and the MediaRecorder stops returning data, even though Audio is still being captured.</i>
+      <table border=1 cellspacing=0 cellpadding=3>
+          <tr>
+            <td>Video Track Muted</td>
+            <td id='video-track-muted'>not set</td>
+          </tr>
+          <tr>
+            <td>MediaRecorder Time Since Last Data</td>
+            <td id='mr-time-since-last'></td>
+          </tr>
+          <tr>
+            <td>MediaRecorder onDataAvailable History</td>
+            <td id='mr-last-data'></td>
+          </tr>
+    </table>
+    </div>
+
+    <script>
+      var _displayVideoTrack;
+      var _audioTrack;
+      var _mediaRecorder;
+      var _lastData;
+
+      function getDisplayMedia() {
+        navigator.mediaDevices
+          .getDisplayMedia({
+            video: {
+              cursor: "always",
+            },
+          })
+          .then((captureStream) => {
+            console.log(captureStream);
+            _displayVideoTrack = captureStream.getVideoTracks()[0];
+            _displayVideoTrack.onmute = () => {
+                document.getElementById('video-track-muted').innerHTML = "muted";
+            }
+            _displayVideoTrack.onunmute = () => {
+                document.getElementById('video-track-muted').innerHTML = "OK";
+            }
+            document.getElementById('video-track-muted').innerHTML = _displayVideoTrack.muted ? "muted" : "OK";
+          });
+      }
+
+      function getAudioMedia() {
+        navigator.mediaDevices
+          .getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+            },
+          })
+          .then((audioStream) => {
+            console.log(audioStream);
+            _audioTrack = audioStream.getAudioTracks()[0];
+          });
+      }
+
+      function onUpdateMediaStream() {
+        _audioDevice = document.getElementById("audio-device").value;
+        videoHeight = parseInt(document.getElementById("video-height").value);
+        videoFramerate = parseInt(
+          document.getElementById("video-framerate").value
+        );
+        navigator.mediaDevices
+          .getUserMedia({
+            audio: {
+              deviceId: { exact: _audioDevice },
+              echoCancellation: false,
+              autoGainControl: false,
+              noiseSuppression: false,
+            },
+          })
+          .then((mediaStream) => {
+            document.getElementById("preview").srcObject = mediaStream;
+            _mediaStream = mediaStream;
+
+            console.log(
+              "Updated video track settings: " +
+                JSON.stringify(_mediaStream.getVideoTracks()[0].getSettings())
+            );
+          });
+      }
+
+      function onStart() {
+        // toggle button states
+        document.getElementById("start-button").disabled = true;
+
+        // Create MediaStream
+        const mediaStream = new MediaStream();
+        mediaStream.addTrack(_displayVideoTrack);
+        mediaStream.addTrack(_audioTrack);
+
+
+        // Setup media recorder
+        var options = {
+          audioBitsPerSecond: 32000,
+          videoBitsPerSecond: 2500000,
+          mimeType: 'video/webm; codecs=vp9,opus',
+        };
+        _mediaRecorder = new MediaRecorder(mediaStream, options);
+        _mediaRecorder.ondataavailable = _onDataAvailable;
+        _mediaRecorder.start(1000);
+
+        _lastData = Date.now();
+        setInterval(() => {
+            document.getElementById('mr-time-since-last').innerHTML = (Date.now() - _lastData)/1000;
+        }, 100);
+      }
+
+      function onStop() {
+        // toggle button states
+        document.getElementById("start-button").disabled = false;
+        document.getElementById("stop-button").disabled = true;
+        document.getElementById("download-button").disabled = false;
+
+        _mediaRecorder.stop();
+      }
+
+      function _onDataAvailable(event) {
+        _lastData = Date.now();
+        document.getElementById('mr-last-data').innerHTML += event.data.size + "<br />";
+      }
+    </script>
+  </body>
+</html>
