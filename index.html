@@ -1,10 +1,10 @@
 <html>
   <head>
     <style>
-        button {
-            padding: 8px;
-            font-size:20px;
-        }
+      button {
+        padding: 8px;
+        font-size: 20px;
+      }
       .row {
         margin: 10px 0;
       }
@@ -15,8 +15,9 @@
       .row .input {
         width: 300px;
       }
-      #mr-time-since-last, #mr-last-data {
-          font-family: monospace;
+      #mr-time-since-last,
+      #mr-last-data {
+        font-family: monospace;
       }
     </style>
   </head>
@@ -25,15 +26,19 @@
 
     <div class="row">
       <h2>
-        1. Get display media (select Chrome Tab with static content, no
-        animations)
+        1. Get display media
       </h2>
+      <div>
+        Select the "Chrome Tab" option and load a static page with no
+        animations. <a href="https://www.google.com/">google.com</a> is a good
+        example.
+      </div>
       <button id="get-display-media-button" onclick="getDisplayMedia()">
-        Request
+        Get Display Capture
       </button>
     </div>
     <div class="row">
-      <h2>2. Get audio</h2>
+      <h2>2. Select audio input</h2>
       <button id="get-audio-media-button" onclick="getAudioMedia()">
         Get Audio Capture
       </button>
@@ -44,21 +49,28 @@
     </div>
     <div class="row">
       <h2>4. Observe</h2>
-      <i>If the video track is muted, click into the shared tab and/or scroll the page. This causes the track to become unmuted and you will see the MediaRecorder starts producing data via it's ondataavailable event handler. If you stop interacting with the page, you'll see the track gets muted and the MediaRecorder stops returning data, even though Audio is still being captured.</i>
-      <table border=1 cellspacing=0 cellpadding=3>
-          <tr>
-            <td>Video Track Muted</td>
-            <td id='video-track-muted'>not set</td>
-          </tr>
-          <tr>
-            <td>MediaRecorder Time Since Last Data</td>
-            <td id='mr-time-since-last'></td>
-          </tr>
-          <tr>
-            <td>MediaRecorder onDataAvailable History</td>
-            <td id='mr-last-data'></td>
-          </tr>
-    </table>
+      <div>
+        If the video track is muted, click into the shared tab and/or scroll the
+        page. This causes the track to become unmuted and you will see the
+        MediaRecorder starts producing data via it's ondataavailable event
+        handler. If you stop interacting with the page, you'll see the track
+        gets muted and the MediaRecorder stops returning data, even though Audio
+        is still being captured.
+      </div>
+      <table border="1" cellspacing="0" cellpadding="3">
+        <tr>
+          <td>Video Track Muted</td>
+          <td id="video-track-muted">not set</td>
+        </tr>
+        <tr>
+          <td>MediaRecorder Time Since Last Data</td>
+          <td id="mr-time-since-last"></td>
+        </tr>
+        <tr>
+          <td>MediaRecorder onDataAvailable History</td>
+          <td id="mr-last-data"></td>
+        </tr>
+      </table>
     </div>
 
     <script>
@@ -78,12 +90,18 @@
             console.log(captureStream);
             _displayVideoTrack = captureStream.getVideoTracks()[0];
             _displayVideoTrack.onmute = () => {
-                document.getElementById('video-track-muted').innerHTML = "muted";
-            }
+              document.getElementById("video-track-muted").innerHTML = "muted";
+            };
             _displayVideoTrack.onunmute = () => {
-                document.getElementById('video-track-muted').innerHTML = "OK";
-            }
-            document.getElementById('video-track-muted').innerHTML = _displayVideoTrack.muted ? "muted" : "OK";
+              document.getElementById("video-track-muted").innerHTML = "OK";
+            };
+            document.getElementById(
+              "video-track-muted"
+            ).innerHTML = _displayVideoTrack.muted ? "muted" : "OK";
+            document.getElementById("get-display-media-button").disabled =
+              "disabled";
+            document.getElementById("get-display-media-button").innerHTML =
+              "OK";
           });
       }
 
@@ -98,6 +116,9 @@
           .then((audioStream) => {
             console.log(audioStream);
             _audioTrack = audioStream.getAudioTracks()[0];
+            document.getElementById("get-audio-media-button").disabled =
+              "disabled";
+            document.getElementById("get-audio-media-button").innerHTML = "OK";
           });
       }
 
@@ -136,12 +157,11 @@
         mediaStream.addTrack(_displayVideoTrack);
         mediaStream.addTrack(_audioTrack);
 
-
         // Setup media recorder
         var options = {
           audioBitsPerSecond: 32000,
           videoBitsPerSecond: 2500000,
-          mimeType: 'video/webm; codecs=vp9,opus',
+          mimeType: "video/webm; codecs=vp9,opus",
         };
         _mediaRecorder = new MediaRecorder(mediaStream, options);
         _mediaRecorder.ondataavailable = _onDataAvailable;
@@ -149,7 +169,8 @@
 
         _lastData = Date.now();
         setInterval(() => {
-            document.getElementById('mr-time-since-last').innerHTML = (Date.now() - _lastData)/1000;
+          document.getElementById("mr-time-since-last").innerHTML =
+            (Date.now() - _lastData) / 1000;
         }, 100);
       }
 
@@ -164,7 +185,8 @@
 
       function _onDataAvailable(event) {
         _lastData = Date.now();
-        document.getElementById('mr-last-data').innerHTML += event.data.size + "<br />";
+        document.getElementById("mr-last-data").innerHTML +=
+          event.data.size + "<br />";
       }
     </script>
   </body>
